@@ -130,10 +130,25 @@ class Cell {
     connectedNeighbors(grid) {
         let neighbors = [];
 
-        // TODO: Tjek om naboen nord for, hvis den findes, har en væg
-        // TODO: Tjek om naboen til venstre, hvis den findes, har en væg
-        // TODO: Tjek om naboen syd for, hvis den findes, har en væg
-        // TODO: Tjek om naboen til højre, hvis den findes, har en væg
+        // Nord
+        if (!this.walls.top && this.y > 0) {
+            neighbors.push(grid[this.x][this.y - 1]);
+        }
+
+        // Venstre
+        if (!this.walls.left && this.x > 0) {
+            neighbors.push(grid[this.x - 1][this.y]);
+        }
+
+        // Syd
+        if (!this.walls.bottom && this.y < grid[0].length - 1) {
+            neighbors.push(grid[this.x][this.y + 1]);
+        }
+
+        // Højre
+        if (!this.walls.right && this.x < grid.length - 1) {
+            neighbors.push(grid[this.x + 1][this.y]);
+        }
 
         return neighbors;
     }
