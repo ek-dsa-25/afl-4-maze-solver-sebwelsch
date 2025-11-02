@@ -4,6 +4,9 @@ function randomInteger(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 }
 
+const nyanImg = new Image();
+nyanImg.src = 'nyancat.png';
+
 class Cell {
     constructor(x, y) {
         this.x = x;
@@ -159,14 +162,24 @@ class Cell {
     }
 
     // Hjælpefunktion til MazeSolver: Fremhæver cellen som en del af stien
-    drawPath(ctx, cellWidth, color = '#ff0000') {
-        // TODO: Personliggør denne funktion.
-        ctx.fillStyle = color;
-        const px = this.x * cellWidth + cellWidth * 0.25;
-        const py = this.y * cellWidth + cellWidth * 0.25;
-        const size = cellWidth * 0.5;
-        ctx.fillRect(px, py, size, size);
+    drawPath(ctx, cellWidth, color = null) {
+        const px = this.x * cellWidth;
+        const py = this.y * cellWidth;
+
+        // Hvis der er farve så fyld baggrundwen
+        if (color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(px, py, cellWidth, cellWidth);
+        }
+
+        // Tegn Nyancat på cellerne
+        const size = cellWidth * 0.8;
+        const offset = (cellWidth - size) / 2;
+        if (nyanImg.complete) {
+            ctx.drawImage(nyanImg, px + offset, py + offset, size, size);
+        }
     }
+
 }
 
 class Maze {
@@ -250,10 +263,36 @@ class MazeSolver {
         const startCell = this.maze.grid[startX][startY];
         const endCell = this.maze.grid[endX][endY];
 
-        // TODO: Lav `findPath()` vha. enten DFS (stak) eller BFS (queue)
+        // Jeg har valgt at bruge BFS da jeg mener den er mest effektiv til at finde den hurtigste/korteste vej
+        // jeg bruger en queue
+        let queue = [];
+        startCell.visited = true;
+        queue.push(startCell);
 
-        return null;
+        while (queue.length > 0) {
+            let current = queue.shift(); // tag forreste element
+
+            // Hvis vi har nået målet, genskab stien
+            if (current.equals(endCell)) {
+                const path = this.reconstructPath(startCell, endCell);
+                return path;
+            }
+
+            // Find naboceller uden vægge
+            let neighbors = current.connectedNeighbors(this.maze.grid);
+
+            for (let neighbor of neighbors) {
+                if (!neighbor.visited) {
+                    neighbor.visited = true;
+                    neighbor.parent = current; // så vi kan retrace
+                    queue.push(neighbor);
+                }
+            }
+        }
+
+        return null; // in case at ingen sti findes
     }
+
 
     reconstructPath(startCell, endCell) {
         const path = [];
@@ -284,6 +323,20 @@ class MazeSolver {
         }
     }
 
+    // ny drawPathStepwise til regnbue
+    async drawRainbowPathStepwise(path, delay = 100) {
+        if (!path) return;
+
+        const rainbowColors = ['#FF0000','#FF7F00','#FFFF00','#00FF00','#0000FF','#4B0082','#8B00FF'];
+
+        for (let i = 0; i < path.length; i++) {
+            const color = rainbowColors[i % rainbowColors.length]; // regnbue mønster
+            path[i].drawPath(this.maze.ctx, this.maze.cellWidth, color);
+            await this.sleep(delay);
+        }
+    }
+
+
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -304,8 +357,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const endX = maze.cols - 1;
     const endY = maze.rows - 1;
 
-    solver.findPath(startX, startY, endX, endY);
-    solver.drawPathStepwise(path, '#ff0000', 20);
+    const path = solver.findPath(startX, startY, endX, endY);
+
+    // solver.drawPathStepwise(path, '#ff0000', 20);
+
+    nyanImg.onload = async () => {
+        await solver.drawRainbowPathStepwise(path, 30);
+    };
 
     console.log(maze);
 })
